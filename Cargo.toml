@@ -1,0 +1,12 @@
+[package]
+name = "abalone"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+debug = true
+
+[dependencies]
+rand = "0.8.5"
+rayon = "1.5.3"
+reduce = "0.1.4"
