@@ -38,6 +38,8 @@ pub struct Game {
     pub winner: Option<Player>,
     pub game_over: bool,
     pub move_number: i16,
+    pub white_pieces: i16,
+    pub black_pieces: i16
 }
 
 impl Game {
@@ -47,7 +49,9 @@ impl Game {
             player: Player::White,
             winner: None,
             move_number: 0,
-            game_over: false
+            game_over: false,
+            white_pieces  : 0,
+            black_pieces : 0,
         };
 
         for x in 0..9 {
@@ -82,6 +86,9 @@ impl Game {
             (4, 8),
             (5, 8),
         ];
+
+        game.white_pieces = 14;
+        game.black_pieces = 14;
 
         for (x, y) in pieces {
             game.board[y][x] = Space::Occupied(Player::White);
@@ -126,6 +133,9 @@ impl Game {
             (6, 7),
             (6, 8),
         ];
+
+        game.white_pieces = 14;
+        game.black_pieces = 14;
 
         for (x, y) in white_pieces {
             game.board[y][x] = Space::Occupied(Player::White);
@@ -175,6 +185,9 @@ impl Game {
             (5, 7),
             (5, 8),
         ];
+
+        game.white_pieces = 14;
+        game.black_pieces = 14;
 
         for (x, y) in white_pieces {
             game.board[y][x] = Space::Occupied(Player::White);
@@ -363,19 +376,26 @@ impl Game {
                 y = new_y;
                 new_x = x + dir.0;
                 new_y = y + dir.1;
-                while in_bounds(new_x, new_y)
-                    && !matches!(self.board[x as usize][y as usize], Space::Empty)
-                {
-                    //if I would be moving to an out of bounds, don't
-                    if matches!(
-                        self.board[new_x as usize][new_y as usize],
-                        Space::OutOfBounds
-                    ) {
-                        break;
-                    }
 
-                    new_state.board[new_x as usize][new_y as usize] =
-                        self.board[x as usize][y as usize];
+                while !matches!(self.board[x as usize][y as usize], Space::Empty) && !matches!(self.board[x as usize][y as usize], Space::OutOfBounds){
+
+                    //if I would be moving to an out of bounds, don't.
+                    // Instead, knock piece off
+                    if !in_bounds(new_x, new_y)  || !matches!(self.board[new_x as usize][new_y as usize], Space::OutOfBounds) {
+                        match self.board[x as usize][y as usize]{
+                            Space::Occupied(moved_off) => {
+                                match moved_off {
+                                    Player::White => {new_state.white_pieces -= 1},
+                                    Player::Black => {new_state.black_pieces -= 1},
+                                };
+                            },
+                            _=> panic!("{:?}", self.board[x as usize][y as usize]),
+                        };
+                        break
+                    };
+
+
+                    new_state.board[new_x as usize][new_y as usize] = self.board[x as usize][y as usize];
                     x = new_x;
                     y = new_y;
                     new_x = x + dir.0;
@@ -404,43 +424,18 @@ impl Game {
             }
         };
 
-        // check for winner:
-        let (seen_white, seen_black) = new_state.count_pieces();
-
-        if seen_white == 8 {
+        if new_state.white_pieces == 8 {
             new_state.winner = Some(Player::Black);
             new_state.game_over = true;
         };
 
 
-        if seen_black == 8 {
+        if new_state.black_pieces == 8 {
             new_state.winner = Some(Player::White);
             new_state.game_over = true;
         };
 
-        // if new_state.move_number > 150 {
-        //     new_state.game_over = true;
-        // }
-
-
         new_state
-    }
-
-    pub fn count_pieces(&self) -> (i8,i8){
-        let mut seen_black : i8 = 0;
-        let mut seen_white : i8 = 0;
-
-        for y in 0..9 {
-            for x in 0..9 {
-                match self.board[x][y] {
-                    Space::Occupied(Player::Black) => seen_black += 1,
-                    Space::Occupied(Player::White) => seen_white += 1,
-                    _ => (),
-                };
-            };
-        };
-
-        (seen_white, seen_black)
     }
 
     pub fn random_playout(&self) -> Option<Player> {
@@ -459,13 +454,16 @@ impl Game {
 
     pub fn greedy_playout(&self) -> Option<Player> {
         let next_moves : Vec<Move> = Game::get_legal_moves(self);
-        let (current_black, current_white) = self.count_pieces();
+
+        let current_black = self.black_pieces;
+        let current_white = self.white_pieces;
 
         let next_state: Game;
         for potenital_move in &next_moves{
             let potential_state : Game = Game::make_move(self, potenital_move);
 
-            let (next_black, next_white) = potential_state.count_pieces();
+            let next_black = potential_state.black_pieces;
+            let next_white = potential_state.white_pieces;
 
             if next_black < current_black || next_white < current_white {
                 next_state = potential_state;
@@ -514,16 +512,16 @@ impl std::fmt::Display for Game {
             Player::Black => output.push_str("Black To Move\n"),
         }
 
-        let (seen_white, seen_black) = self.count_pieces();
 
-        if seen_white == 8 {
+
+        if self.white_pieces == 8 {
             output.push_str("Black Wins!\n");
 
-        } else if seen_black == 8 {
+        } else if self.black_pieces == 8 {
             output.push_str("White Wins!\n");
         } else {
-            output.push_str(&format!("White Score: {}\n", 14-seen_black));
-            output.push_str(&format!("Black Score: {}\n", 14-seen_white));
+            output.push_str(&format!("White Score: {}\n", 14-self.black_pieces));
+            output.push_str(&format!("Black Score: {}\n", 14-self.white_pieces));
         }
 
         write!(f, "{}", output)

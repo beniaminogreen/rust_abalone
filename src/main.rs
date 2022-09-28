@@ -17,7 +17,7 @@ fn mcts_search(root: Game) -> ArenaTree {
     let mut expanded: usize;
     let mut result: Option<Player>;
 
-    for _ in 1..10_000{
+    for _ in 1..100_000{
         selected = arena.select_step(0);
         expanded = arena.expand_step(selected);
         result = arena.random_playout(expanded);
@@ -29,24 +29,16 @@ fn mcts_search(root: Game) -> ArenaTree {
 
 fn main() {
     let mut game = Game::new_belgian_daisy();
-    // game.board[0][0] = Space::Empty;
-
-    // game.board[2][0] = Space::Occupied(Player::White);
-    // game.board[4][0] = Space::Occupied(Player::Black);
-    // game.board[0][4] = Space::Empty;
-
-    // let game_1 = mcts_search(game);
-    // let game_2 = mcts_search(game);
 
     while !game.game_over {
-    println!("{}", game);
-    let arena_vec : Vec<ArenaTree> = (0..8).
-        into_par_iter().
-        map(|_| mcts_search(game)).
-        collect();
-    let merged_tree : ArenaTree = Reduce::reduce(arena_vec.into_iter(), | a,b | (&a).merge_trees(&b)).unwrap();
+        println!("{}", game);
+        let arena_vec : Vec<ArenaTree> = (0..8).
+            into_par_iter().
+            map(|_| mcts_search(game)).
+            collect();
+        let merged_tree : ArenaTree = Reduce::reduce(arena_vec.into_iter(), | a,b | (&a).merge_trees(&b)).unwrap();
 
-    game = merged_tree.nodes[merged_tree.reccomend()].game_state;
+        game = merged_tree.nodes[merged_tree.reccomend()].game_state;
     }
     println!("{}", game);
 }
