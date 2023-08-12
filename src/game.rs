@@ -342,8 +342,8 @@ impl Game {
                             start: (x, y),
                             dir: (x_off, y_off),
                         });
-                        break;
                     }
+                    break;
                 }
             };
             new_x += x_off;
@@ -377,11 +377,11 @@ impl Game {
                 new_x = x + dir.0;
                 new_y = y + dir.1;
 
-                while !matches!(self.board[x as usize][y as usize], Space::Empty) && !matches!(self.board[x as usize][y as usize], Space::OutOfBounds){
+                while matches!(self.board[x as usize][y as usize], Space::Occupied(_)) {
 
                     //if I would be moving to an out of bounds, don't.
                     // Instead, knock piece off
-                    if !in_bounds(new_x, new_y)  || !matches!(self.board[new_x as usize][new_y as usize], Space::OutOfBounds) {
+                    if !in_bounds(new_x, new_y)  || matches!(self.board[new_x as usize][new_y as usize], Space::OutOfBounds) {
                         match self.board[x as usize][y as usize]{
                             Space::Occupied(moved_off) => {
                                 match moved_off {
@@ -435,7 +435,37 @@ impl Game {
             new_state.game_over = true;
         };
 
+        if new_state.move_number > 1000 {
+            new_state.winner = None;
+            new_state.game_over = true;
+        }
+
+
         new_state
+    }
+
+    pub fn validate_state(&self) {
+        let mut white_seen: i16 = 0;
+        let mut black_seen: i16 = 0;
+
+        for y in 0..9 {
+            for x in 0..9 {
+                match self.board[x][y] {
+                    Space::Occupied(Player::Black) => black_seen += 1,
+                    Space::Occupied(Player::White) => white_seen +=1,
+                    _ => (),
+                };
+            }
+        }
+
+        if black_seen != self.black_pieces {
+            panic!("counting error")
+        }
+
+        if white_seen != self.white_pieces {
+            panic!("counting error")
+        }
+
     }
 
     pub fn random_playout(&self) -> Option<Player> {
@@ -467,6 +497,7 @@ impl Game {
 
             if next_black < current_black || next_white < current_white {
                 next_state = potential_state;
+
 
                 if next_state.game_over {
                     return next_state.winner
@@ -512,11 +543,8 @@ impl std::fmt::Display for Game {
             Player::Black => output.push_str("Black To Move\n"),
         }
 
-
-
         if self.white_pieces == 8 {
             output.push_str("Black Wins!\n");
-
         } else if self.black_pieces == 8 {
             output.push_str("White Wins!\n");
         } else {

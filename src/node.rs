@@ -119,13 +119,12 @@ impl ArenaTree {
         }
     }
 
-    pub fn random_playout(&self, node_id: usize) -> Option<Player> {
+    pub fn playout(&self, node_id: usize) -> Option<Player> {
         if self.nodes[node_id].game_state.game_over{
             return self.nodes[node_id].game_state.winner
          };
 
-        // self.nodes[node_id].game_state.greedy_playout()
-        self.nodes[node_id].game_state.random_playout()
+        self.nodes[node_id].game_state.greedy_playout()
     }
 
     pub fn backpropagate(&mut self, node_id : usize, player : Option<Player>){
@@ -153,8 +152,8 @@ impl ArenaTree {
         let mut reccomend : usize = 0;
         for child in first_child..last_child{
             let visits = self.nodes[child].visits;
-            let wins = self.nodes[child].wins;
-            println!("Player: {:?}, Action: {}, Visits: {},{},{:?}", node.game_state.player,child, visits, wins, self.nodes[child].game_state.winner);
+            // let wins = self.nodes[child].wins;
+            // println!("Player: {:?}, Action: {}, Visits: {},{},{:?}", node.game_state.player,child, visits, wins, self.nodes[child].game_state.winner);
             if visits >= max_vists {
                 max_vists = visits;
                 reccomend = child;
